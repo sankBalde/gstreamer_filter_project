@@ -4,6 +4,9 @@
 #include <iostream>
 #include <vector>
 
+#include <string>
+#include <sstream>
+
 
 struct RGB {
     uint8_t R;
@@ -90,57 +93,69 @@ public:
 
 class ImageHandler {
 public:
-    RGBImage load_image(const std::string& imagePath, int image_width, int image_height) {
-        std::ifstream imageFile(imagePath, std::ios::binary);
 
-        if (!imageFile.is_open()) {
+    RGBImage lireRGBIMAGE(const std::string& nomFichier, int width, int height) {
+        int nbre_ligne = width * height;
+        std::ifstream fichier(nomFichier);
+        RGBImage image(width, height);
+
+        if (fichier) {
+
+            std::string ligne;
+            int ligneIndex = 0;
+
+            while (std::getline(fichier, ligne) && ligneIndex < nbre_ligne) { // Lit chaque ligne du fichier et vérifie la limite du nombre de lignes
+                std::istringstream iss(ligne); // Crée un flux de chaîne de caractères à partir de la ligne lue
+                int valeur; // Variable pour stocker chaque valeur R, G, B du pixel
+                u_int8_t R, G, B;
+                for (int j = 0; j < 3 && iss >> valeur; ++j) {
+                    if (j == 0){
+                        R = valeur;
+                    }
+                    else if (j == 1) {
+                        G = valeur;
+                    }
+                    else {
+                        B = valeur;
+                    }
+
+                }
+                image.buffer[ligneIndex] = {R, G, B};
+
+                if (!iss.eof()) {
+                    std::cerr << "Erreur lors de la lecture du fichier." << std::endl;
+                    return RGBImage();
+                }
+
+                ++ligneIndex;
+            }
+            fichier.close();
+        }
+        else {
             std::cerr << "Erreur lors de l'ouverture du fichier." << std::endl;
-            return RGBImage(); // Retourne une image vide en cas d'erreur
         }
 
-        imageFile.seekg(0, std::ios::end);
-        std::streampos fileSize = imageFile.tellg();
-        imageFile.seekg(0, std::ios::beg);
-
-        std::vector<char> buffer(fileSize);
-        imageFile.read(buffer.data(), fileSize);
-
-        imageFile.close();
-
-        if (!imageFile) {
-            std::cerr << "Erreur lors de la lecture du fichier." << std::endl;
-            return RGBImage(); // Retourne une image vide en cas d'erreur
-        }
-
-
-        int imageSize = fileSize / sizeof(RGB);
-        int width = static_cast<int>(std::sqrt(imageSize));
-        int height = imageSize / width;
-
-        // Convertir le buffer en image RGB
-        RGBImage rgbImage(image_width, image_height);
-        std::memcpy(rgbImage.buffer.data(), buffer.data(), buffer.size());
-
-        return rgbImage;
+        return image;
     }
 
-
-    bool save_image(const std::string& imagePath, const RGBImage& rgbImage) {
-        std::ofstream imageFile(imagePath, std::ios::binary);
-
-        if (!imageFile.is_open()) {
+    bool savePPM(const std::string& filename, RGBImage& image) {
+        std::ofstream ppmFile(filename);
+        if (!ppmFile) {
             std::cerr << "Erreur lors de l'ouverture du fichier pour l'écriture." << std::endl;
             return false;
         }
 
-        imageFile.write(reinterpret_cast<const char*>(rgbImage.buffer.data()), rgbImage.buffer.size() * sizeof(RGB));
+        ppmFile << "P3\n"; // Entête PPM pour un fichier texte
+        ppmFile << image.width << " " << image.height << "\n"; // Dimensions de l'image
+        ppmFile << "255\n"; // Valeur maximale des composantes de couleur
 
-        if (!imageFile) {
-            std::cerr << "Erreur lors de l'écriture de l'image dans le fichier." << std::endl;
-            return false;
+        for (const auto& pixel : image.buffer) {
+            ppmFile << static_cast<int>(pixel.R) << " "; // Composante rouge
+            ppmFile << static_cast<int>(pixel.G) << " "; // Composante verte
+            ppmFile << static_cast<int>(pixel.B) << " "; // Composante bleue
         }
 
-        imageFile.close();
+        ppmFile.close();
         return true;
     }
 };

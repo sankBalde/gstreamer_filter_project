@@ -23,12 +23,12 @@ void print_lab_values(const LabImage& lab_image) {
 
 int main() {
     ImageHandler imageHandler;
-    std::string imagePath1 = "../frame.jpg";
-    std::string imagePath2 = "../bg.jpg";
-    int image_width = 360;
-    int image_height = 480;
-    RGBImage rgbImage1 = imageHandler.load_image(imagePath1, image_width, image_height);
-    RGBImage rgbImage2 = imageHandler.load_image(imagePath2,image_width, image_height);
+    std::string imagePath1 = "../frame_rgb";
+    std::string imagePath2 = "../bg_rgb";
+    int image_width = 480;
+    int image_height = 360;
+    RGBImage rgbImage1 = imageHandler.lireRGBIMAGE(imagePath1, image_width, image_height);
+    RGBImage rgbImage2 = imageHandler.lireRGBIMAGE(imagePath2,image_width, image_height);
 
     if (rgbImage1.width > 0 && rgbImage1.height > 0) {
 
@@ -42,18 +42,18 @@ int main() {
         //LabImage opening_lab = morphological_opening(distance_lab, 3);
 
         Mask hysteris = apply_hysteresis_threshold(distance_lab, 4, 30);
-        //print_mask_values(hysteris);
+        //print_mask_values(distance_lab);
 
         RGBImage final = mask_to_rgb(hysteris);
-        print_mask_values(distance_lab);
+        //print_mask_values(distance_lab);
 
 
 
         //RGBImage final = convertlab2rgb(lab_image1);
 
         // Exemple de sauvegarde de l'image
-        std::string saveImagePath = "../final_im.jpg";
-        if (imageHandler.save_image(saveImagePath, final)) {
+        std::string saveImagePath = "../final_im.ppm";
+        if (imageHandler.savePPM(saveImagePath, final)) {
             std::cout << "Image sauvegardée avec succès." << std::endl;
         } else {
             std::cerr << "Erreur lors de la sauvegarde de l'image." << std::endl;
