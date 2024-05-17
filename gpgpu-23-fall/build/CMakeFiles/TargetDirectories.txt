@@ -1,0 +1,6 @@
+/home/abdoulaye.balde/gstreamer_filter_project/gpgpu-23-fall/build/CMakeFiles/gstcudafilter-base.dir
+/home/abdoulaye.balde/gstreamer_filter_project/gpgpu-23-fall/build/CMakeFiles/gstcudafilter-cu.dir
+/home/abdoulaye.balde/gstreamer_filter_project/gpgpu-23-fall/build/CMakeFiles/gstcudafilter-cpp.dir
+/home/abdoulaye.balde/gstreamer_filter_project/gpgpu-23-fall/build/CMakeFiles/main.dir
+/home/abdoulaye.balde/gstreamer_filter_project/gpgpu-23-fall/build/CMakeFiles/edit_cache.dir
+/home/abdoulaye.balde/gstreamer_filter_project/gpgpu-23-fall/build/CMakeFiles/rebuild_cache.dir
