@@ -39,19 +39,14 @@ int main() {
         Mask distance_lab = deltaE_cie76(lab_image1, lab_image2);
 
 
-        //LabImage opening_lab = morphological_opening(distance_lab, 3);
+        Mask opening_mask = morphological_opening(distance_lab, 3);
 
-        Mask hysteris = apply_hysteresis_threshold(distance_lab, 4, 30);
+        Mask hysteris = apply_hysteresis_threshold(opening_mask, 4, 30);
         //print_mask_values(distance_lab);
 
-        RGBImage final = mask_to_rgb(hysteris);
+        RGBImage final = mask_to_rgb(hysteris, rgbImage1);
         //print_mask_values(distance_lab);
 
-
-
-        //RGBImage final = convertlab2rgb(lab_image1);
-
-        // Exemple de sauvegarde de l'image
         std::string saveImagePath = "../final_im.ppm";
         if (imageHandler.savePPM(saveImagePath, final)) {
             std::cout << "Image sauvegardée avec succès." << std::endl;
@@ -59,16 +54,5 @@ int main() {
             std::cerr << "Erreur lors de la sauvegarde de l'image." << std::endl;
         }
     }
-
-    /*// Exemple d'utilisation de la conversion RGB vers Lab puis de Lab vers RGB
-    RGB rgb_pixel = {100, 150, 200};
-    Lab lab_pixel = RGBtoLab(rgb_pixel);
-    RGB rgb_pixel_converted = LabtoRGB(lab_pixel);
-    std::cout << static_cast<int>(lab_pixel.L) << " " << static_cast<int>(lab_pixel.a) << " " << static_cast<int>(lab_pixel.b) << "\n";
-
-
-
-    std::cout << static_cast<int>(rgb_pixel_converted.R) << " " << static_cast<int>(rgb_pixel_converted.G) << " " << static_cast<int>(rgb_pixel_converted.B) << "\n";*/
-
     return 0;
 }

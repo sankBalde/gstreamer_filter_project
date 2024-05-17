@@ -22,38 +22,33 @@ struct Lab {
 
 class Mask {
 public:
-    // Constructeur par défaut
+
     Mask() : width(0), height(0) {}
 
-    // Constructeur avec spécification de la taille
     Mask(int sx, int sy) : width(sx), height(sy) {
         buffer.resize(width * height);
     }
 
-    // Accesseur pour obtenir la distance d'un pixel
     double get_distance(int x, int y) const {
         return buffer[y * width + x];
     }
 
-    // Mutateur pour définir la distance d'un pixel
     void set_distance(int x, int y, double distance) {
         buffer[y * width + x] = distance;
     }
 
-    // Accesseur pour obtenir la largeur de la masque
     int get_width() const {
         return width;
     }
 
-    // Accesseur pour obtenir la hauteur de la masque
     int get_height() const {
         return height;
     }
 
 
-    int width; // Largeur de la masque
-    int height; // Hauteur de la masque
-    std::vector<double> buffer; // Buffer de distances
+    int width;
+    int height;
+    std::vector<double> buffer;
 };
 
 class LabImage {
@@ -85,10 +80,9 @@ public:
         buffer.resize(width * height);
     }
 
-public:
-    int width; // Largeur de l'image en pixels
-    int height; // Hauteur de l'image en pixels
-    std::vector<RGB> buffer; // Buffer de pixels
+    int width;
+    int height;
+    std::vector<RGB> buffer;
 };
 
 class ImageHandler {
@@ -104,9 +98,9 @@ public:
             std::string ligne;
             int ligneIndex = 0;
 
-            while (std::getline(fichier, ligne) && ligneIndex < nbre_ligne) { // Lit chaque ligne du fichier et vérifie la limite du nombre de lignes
-                std::istringstream iss(ligne); // Crée un flux de chaîne de caractères à partir de la ligne lue
-                int valeur; // Variable pour stocker chaque valeur R, G, B du pixel
+            while (std::getline(fichier, ligne) && ligneIndex < nbre_ligne) {
+                std::istringstream iss(ligne);
+                int valeur;
                 u_int8_t R, G, B;
                 for (int j = 0; j < 3 && iss >> valeur; ++j) {
                     if (j == 0){
@@ -145,14 +139,14 @@ public:
             return false;
         }
 
-        ppmFile << "P3\n"; // Entête PPM pour un fichier texte
-        ppmFile << image.width << " " << image.height << "\n"; // Dimensions de l'image
-        ppmFile << "255\n"; // Valeur maximale des composantes de couleur
+        ppmFile << "P3\n";
+        ppmFile << image.width << " " << image.height << "\n";
+        ppmFile << "255\n";
 
         for (const auto& pixel : image.buffer) {
-            ppmFile << static_cast<int>(pixel.R) << " "; // Composante rouge
-            ppmFile << static_cast<int>(pixel.G) << " "; // Composante verte
-            ppmFile << static_cast<int>(pixel.B) << " "; // Composante bleue
+            ppmFile << static_cast<int>(pixel.R) << " ";
+            ppmFile << static_cast<int>(pixel.G) << " ";
+            ppmFile << static_cast<int>(pixel.B) << " ";
         }
 
         ppmFile.close();
