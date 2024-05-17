@@ -1,6 +1,42 @@
 #pragma once
 #include "image.hh"
 #include <cmath>
+#include <vector>
+
+#include <cstdint>
+#include <stdexcept>
+
+std::vector<RGB> uint8_to_rgb(const uint8_t* buffer, size_t size) {
+    if (size % 3 != 0) {
+        throw std::invalid_argument("Buffer size is not a multiple of 3");
+    }
+
+    size_t num_pixels = size / 3;
+    std::vector<RGB> rgb_data(num_pixels);
+
+    for (size_t i = 0; i < num_pixels; ++i) {
+        rgb_data[i].R = buffer[i * 3];
+        rgb_data[i].G = buffer[i * 3 + 1];
+        rgb_data[i].B = buffer[i * 3 + 2];
+    }
+
+    return rgb_data;
+}
+
+std::vector<uint8_t> rgb_to_uint8(const std::vector<RGB>& rgb_data) {
+    size_t num_pixels = rgb_data.size();
+    std::vector<uint8_t> buffer(num_pixels * 3);
+
+    for (size_t i = 0; i < num_pixels; ++i) {
+        buffer[i * 3] = rgb_data[i].R;
+        buffer[i * 3 + 1] = rgb_data[i].G;
+        buffer[i * 3 + 2] = rgb_data[i].B;
+    }
+
+    return buffer;
+}
+
+
 
 Lab RGBtoLab(const RGB& rgb) {
 

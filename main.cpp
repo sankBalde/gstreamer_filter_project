@@ -22,7 +22,7 @@ void print_lab_values(const LabImage& lab_image) {
 
 
 int main() {
-    ImageHandler imageHandler;
+    /*ImageHandler imageHandler;
     std::string imagePath1 = "../frame_rgb";
     std::string imagePath2 = "../bg_rgb";
     int image_width = 480;
@@ -55,7 +55,9 @@ int main() {
             std::cerr << "Erreur lors de la sauvegarde de l'image." << std::endl;
         }
     }
-    return 0;
+    return 0;*/
+
+
     /*
     // Création d'un masque de taille 4x4
     Mask mask(4, 4);
