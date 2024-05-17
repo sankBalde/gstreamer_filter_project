@@ -45,6 +45,7 @@ int main() {
         //print_mask_values(distance_lab);
 
         RGBImage final = mask_to_rgb(hysteris, rgbImage1);
+        //RGBImage final = mask_to_rgb(opening_mask);
         //print_mask_values(distance_lab);
 
         std::string saveImagePath = "../final_im.ppm";
@@ -55,4 +56,26 @@ int main() {
         }
     }
     return 0;
+    /*
+    // Création d'un masque de taille 4x4
+    Mask mask(4, 4);
+
+    // Initialisation des distances dans le masque
+    for (int y = 0; y < mask.get_height(); ++y) {
+        for (int x = 0; x < mask.get_width(); ++x) {
+            mask.set_distance(x, y, static_cast<double>(x + y)); // Exemple de distance
+        }
+    }
+
+    Mask hyst = apply_hysteresis_threshold(mask, 1.5, 4.5);
+
+    // Affichage des distances
+    for (int y = 0; y < hyst.get_height(); ++y) {
+        for (int x = 0; x < hyst.get_width(); ++x) {
+            std::cout << hyst.get_distance(x, y) << " ";
+        }
+        std::cout << "\n";
+    }
+
+    return 0;*/
 }

@@ -186,7 +186,7 @@ Mask morphological_opening(Mask& mask, int radius) {
 
 void explore_connected_pixels(Mask& mask, Mask& result_mask, int x, int y, double low_threshold, double high_threshold) {
     // Marquer le pixel actuel comme moyen
-    result_mask.set_distance(x, y, 128.0);
+    result_mask.set_distance(x, y, 255.0);
 
     // Définir les offsets pour les voisins
     int dx[] = {-1, 0, 1, -1, 1, -1, 0, 1};
@@ -201,7 +201,7 @@ void explore_connected_pixels(Mask& mask, Mask& result_mask, int x, int y, doubl
         if (nx >= 0 && ny >= 0 && nx < mask.get_width() && ny < mask.get_height()) {
             // Vérifier si le voisin n'a pas déjà été traité
             if (result_mask.get_distance(nx, ny) == 0.0) {
-                double neighbor_distance = mask.get_distance(nx, ny);
+                int neighbor_distance = mask.get_distance(nx, ny);
 
                 // Si le voisin est au-dessus du seuil haut, le marquer comme fort et explorer ses voisins
                 if (neighbor_distance > high_threshold) {
@@ -209,8 +209,8 @@ void explore_connected_pixels(Mask& mask, Mask& result_mask, int x, int y, doubl
                     explore_connected_pixels(mask, result_mask, nx, ny, low_threshold, high_threshold);
                 }
                 // Si le voisin est entre les seuils, le marquer comme moyen et explorer ses voisins
-                else if (neighbor_distance >= low_threshold) {
-                    result_mask.set_distance(nx, ny, 128.0);
+                else if (neighbor_distance > low_threshold) {
+                    result_mask.set_distance(nx, ny, 255.0);
                     explore_connected_pixels(mask, result_mask, nx, ny, low_threshold, high_threshold);
                 }
                 // Sinon, le marquer comme faible
@@ -240,10 +240,10 @@ Mask apply_hysteresis_threshold(Mask& mask, double low_threshold, double high_th
                 continue; // Passer au pixel suivant si déjà traité
             }
 
-            double pixel_distance = mask.get_distance(x, y);
+            int pixel_distance = mask.get_distance(x, y);
 
             // Si la distance du pixel est en dessous du seuil bas, le marquer comme faible
-            if (pixel_distance < low_threshold) {
+            if (pixel_distance <= low_threshold) {
                 result_mask.set_distance(x, y, 0.0);
             }
             // Si la distance du pixel est au-dessus du seuil haut, le marquer comme fort
@@ -282,12 +282,6 @@ RGBImage mask_to_rgb(Mask& mask, RGBImage& image) {
 
     return rgb_image;
 }
-
-
-
-
-
-
 
 
 
