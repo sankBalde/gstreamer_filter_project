@@ -254,14 +254,15 @@ void explore_connected_pixels(Mask& mask, Mask& result_mask, int x, int y, doubl
     }
 }
 
+
 Mask apply_hysteresis_threshold(Mask& mask, int low_threshold, int high_threshold) {
     Mask result_mask(mask.width, mask.height);
 
     // Parcourir tous les pixels du masque
-    /*for (int y = 0; y < mask.height; ++y) {
+    for (int y = 0; y < mask.height; ++y) {
         for (int x = 0; x < mask.width; ++x) {
-            //double pixel_distance = mask.get_distance(x, y);
-            /*double result_distance = 0.0;
+            double pixel_distance = mask.get_distance(x, y);
+            double result_distance = 0.0;
 
             // Appliquer le seuillage
             if (pixel_distance < low_threshold) {
@@ -276,12 +277,15 @@ Mask apply_hysteresis_threshold(Mask& mask, int low_threshold, int high_threshol
             }
             result_mask.set_distance(x, y, result_distance);
         }
-    }*/
+    }
 
     return result_mask;
 }
 
-/*Mask apply_hysteresis_threshold(Mask& mask, double low_threshold, double high_threshold) {
+
+
+/*
+Mask apply_hysteresis_threshold(Mask& mask, double low_threshold, double high_threshold) {
     Mask result_mask(mask.get_width(), mask.get_height());
 
     // Initialiser le masque résultant avec des distances faibles (0.0)
@@ -318,7 +322,7 @@ Mask apply_hysteresis_threshold(Mask& mask, int low_threshold, int high_threshol
 
     return result_mask;
 }
-
+*/
 
 RGBImage mask_to_rgb(Mask& mask, RGBImage& image) {
     RGBImage rgb_image(mask.get_width(), mask.get_height());
@@ -340,7 +344,7 @@ RGBImage mask_to_rgb(Mask& mask, RGBImage& image) {
     }
 
     return rgb_image;
-}*/
+}
 RGBImage mask_to_rgb(Mask& mask) {
     RGBImage rgb_image(mask.width, mask.height);
 
@@ -412,5 +416,3 @@ LabImage convertrgb2lab(RGBImage& rgb_image) {
 
     return lab_image;
 }
-
-
