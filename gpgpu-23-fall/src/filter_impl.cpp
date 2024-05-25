@@ -36,10 +36,20 @@ extern "C" {
 
         Mask distance_lab = deltaE_cie76(lab_image1, lab_image2);
         Mask opening_mask = morphological_opening(distance_lab, 3);
-        //Mask hysteris = apply_hysteresis_threshold(opening_mask, 4, 30);
+        Mask hysteris = apply_hysteresis_threshold(opening_mask, 4, 30);
 
         //std::string saveImagePath = "../final_im.ppm";
-        RGBImage final = mask_to_rgb(opening_mask);
+        RGBImage final = mask_to_rgb(hysteris, rgbImage2);
+
+//        for (int k = 0; k < final.buffer.size(); ++k)
+//        {
+//            if (
+//                    final.buffer[k].R != 0 &&
+//                    final.buffer[k].G != 0 &&
+//                    final.buffer[k].B != 0
+//                    )
+//            final.buffer[k].R = 255;
+//        }
         /*ImageHandler imageHandler;
         if (imageHandler.savePPM(saveImagePath, final)) {
             std::cout << "Image sauvegardée avec succès." << std::endl;
