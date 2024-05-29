@@ -9,7 +9,6 @@
 #include "image.hh"
 #include "utils.hh"
 
-// Variable globale pour stocker le buffer précédent
 static std::vector<uint8_t> global_buffer;
 
 extern "C" {
@@ -38,51 +37,29 @@ extern "C" {
         Mask opening_mask = morphological_opening(distance_lab, 3);
         Mask hysteris = apply_hysteresis_threshold(opening_mask, 4, 30);
 
-        //std::string saveImagePath = "../final_im.ppm";
         RGBImage final = mask_to_rgb(hysteris, rgbImage2);
 
-//        for (int k = 0; k < final.buffer.size(); ++k)
-//        {
-//            if (
-//                    final.buffer[k].R != 0 &&
-//                    final.buffer[k].G != 0 &&
-//                    final.buffer[k].B != 0
-//                    )
-//            final.buffer[k].R = 255;
-//        }
-        /*ImageHandler imageHandler;
-        if (imageHandler.savePPM(saveImagePath, final)) {
-            std::cout << "Image sauvegardée avec succès." << std::endl;
-        } else {
-            std::cerr << "Erreur lors de la sauvegarde de l'image." << std::endl;
-        }
-        //Mask hysteris = apply_hysteresis_threshold(opening_mask, 4, 30);
 
-        //RGBImage final = mask_to_rgb(hysteris, rgbImage1);*/
 
-        // Convertir l'image RGB en buffer uint8_t
         uint8_t* final_buffer_ptr = rgb_to_uint8(final.buffer);
 
-        // Vérification du pointeur
         if (final_buffer_ptr == nullptr) {
             std::cerr << "Erreur: rgb_to_uint8 a retourné un pointeur nul." << std::endl;
             return;
         }
 
-        // Copier les données du buffer final dans le buffer d'entrée avec une boucle for
+        //global_buffer.assign(buffer, buffer + buffer_size);
+
         for (size_t i = 0; i < buffer_size; ++i) {
             buffer[i] = final_buffer_ptr[i];
         }
 
-        // Libérer la mémoire allouée par rgb_to_uint8 si nécessaire
         delete[] final_buffer_ptr;
 
-        // Mettre à jour global_buffer avec le nouveau buffer
-        global_buffer.assign(buffer, buffer + buffer_size);
 
-        // Simuler un long traitement si nécessaire
+
         using namespace std::chrono_literals;
-        // std::this_thread::sleep_for(100ms);*/
+
 
     }
 }

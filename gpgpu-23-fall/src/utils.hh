@@ -5,11 +5,26 @@
 
 #include <cstdint>
 #include <stdexcept>
+#include <omp.h>
+
+
+/*std::vector<RGB> uint8_to_rgb(const uint8_t* buffer, int w, int h) {
+    size_t num_pixels = w * h;
+    std::vector<RGB> rgb_data(num_pixels);
+    //#pragma omp parallel for
+    for (size_t i = 0; i < num_pixels; ++i) {
+        rgb_data[i].R = buffer[i * 3];
+        rgb_data[i].G = buffer[i * 3 + 1];
+        rgb_data[i].B = buffer[i * 3 + 2];
+    }
+
+    return rgb_data;
+}*/
 
 std::vector<RGB> uint8_to_rgb(const uint8_t* buffer, int w, int h) {
     size_t num_pixels = w * h;
     std::vector<RGB> rgb_data(num_pixels);
-
+    
     for (size_t i = 0; i < num_pixels; ++i) {
         rgb_data[i].R = buffer[i * 3];
         rgb_data[i].G = buffer[i * 3 + 1];
@@ -19,10 +34,12 @@ std::vector<RGB> uint8_to_rgb(const uint8_t* buffer, int w, int h) {
     return rgb_data;
 }
 
+
 uint8_t* rgb_to_uint8(const std::vector<RGB>& rgb_data) {
     size_t num_pixels = rgb_data.size();
     uint8_t* buffer = new uint8_t[num_pixels * 3];
 
+    //#pragma omp parallel for
     for (size_t i = 0; i < num_pixels; ++i) {
         buffer[i * 3] = rgb_data[i].R;
         buffer[i * 3 + 1] = rgb_data[i].G;
@@ -183,7 +200,7 @@ Mask dilate(Mask& mask, int radius) {
 
 Mask erode(Mask& mask, int radius) {
     Mask eroded_mask(mask.width, mask.height);
-
+    //#pragma omp parallel for
     for (int y = 0; y < mask.height; ++y) {
         for (int x = 0; x < mask.width; ++x) {
             // Initialiser les valeurs min/max avec la première valeur dans le voisinage
@@ -270,10 +287,10 @@ Mask apply_hysteresis_threshold(Mask& mask, int low_threshold, int high_threshol
                 result_distance = 0.0;
             } else if (pixel_distance > high_threshold) {
                 // Si la distance du pixel est au-dessus du seuil haut, le marquer comme fort
-                result_distance = 0.0;
+                result_distance = 255.0;
             } else {
                 // Si la distance du pixel est entre les seuils, le marquer comme moyen
-                result_distance = 255.0;
+                result_distance = 129.0;
             }
             result_mask.set_distance(x, y, result_distance);
         }
@@ -391,7 +408,7 @@ Mask deltaE_cie76(LabImage& image1, LabImage& image2) {
 
 RGBImage convertlab2rgb(LabImage& lab_image) {
     RGBImage rgb_image(lab_image.width, lab_image.height);
-
+    //#pragma omp parallel for
     for (int y = 0; y < lab_image.height; ++y) {
         for (int x = 0; x < lab_image.width; ++x) {
             const Lab& lab = lab_image.get_pixel(x, y);
@@ -405,7 +422,7 @@ RGBImage convertlab2rgb(LabImage& lab_image) {
 
 LabImage convertrgb2lab(RGBImage& rgb_image) {
     LabImage lab_image(rgb_image.width, rgb_image.height);
-
+    //#pragma omp parallel for
     for (int y = 0; y < rgb_image.height; ++y) {
         for (int x = 0; x < rgb_image.width; ++x) {
             const RGB& rgb = rgb_image.buffer[y * rgb_image.width + x];
