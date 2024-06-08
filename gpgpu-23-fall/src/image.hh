@@ -14,6 +14,8 @@ struct RGB {
     uint8_t B;
 };
 
+
+
 struct Lab {
     double L;
     double a;

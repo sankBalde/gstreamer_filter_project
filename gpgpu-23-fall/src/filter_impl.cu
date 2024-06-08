@@ -4,7 +4,9 @@
 #include <chrono>
 #include <thread>
 #include <cstdio>
-#include "logo.h"
+#include <cstdint>
+#include <vector>
+#include "cudautils.cuh"
 
 #define CHECK_CUDA_ERROR(val) check((val), #val, __FILE__, __LINE__)
 template <typename T>
@@ -20,100 +22,128 @@ void check(T err, const char* const func, const char* const file,
     }
 }
 
-struct rgb {
-    uint8_t r, g, b;
-};
 
-__constant__ uint8_t* logo;
+uint8_t* getPointerToRGB(RGB* rgb) {
+    return reinterpret_cast<uint8_t*>(rgb);
+}
 
-/// @brief Black out the red channel from the video and add EPITA's logo
-/// @param buffer 
-/// @param width 
-/// @param height 
-/// @param stride 
-/// @param pixel_stride 
-/// @return 
-__global__ void remove_red_channel_inp(std::byte* buffer, int width, int height, int stride)
-{
-    int y = blockIdx.y * blockDim.y + threadIdx.y; 
-    int x = blockIdx.x * blockDim.x + threadIdx.x;
+RGB* getRGBFromPointer(uint8_t* pointer) {
+    return reinterpret_cast<RGB*>(pointer);
+}
 
-    if (x >= width || y >= height)
-        return; 
 
-    rgb* lineptr = (rgb*) (buffer + y * stride);
-    if (y < logo_height && x < logo_width) {
-        float alpha = logo[y * logo_width + x] / 255.f;
-        lineptr[x].r = 0;
-        lineptr[x].g = uint8_t(alpha * lineptr[x].g + (1-alpha) * 255);
-        lineptr[x].b = uint8_t(alpha * lineptr[x].b + (1-alpha) * 255);
-    } else {
-        lineptr[x].r = 0;
+std::vector<RGB> convertToVector(RGB* array, size_t size) {
+    std::vector<RGB> vec;
+    for (size_t i = 0; i < size; i++) {
+        vec.push_back(array[i]);
     }
+    return vec;
 }
 
 
 
 
-namespace 
-{
-    void load_logo()
-    {
-        static auto buffer = std::unique_ptr<std::byte, decltype(&cudaFree)>{nullptr, &cudaFree}; 
 
-        if (buffer == nullptr)
-        {
-            cudaError_t err;
-            std::byte* ptr;
-            err = cudaMalloc(&ptr, logo_width * logo_height);
-            CHECK_CUDA_ERROR(err);
 
-            err = cudaMemcpy(ptr, logo_data, logo_width * logo_height, cudaMemcpyHostToDevice);
-            CHECK_CUDA_ERROR(err);
-
-            err = cudaMemcpyToSymbol(logo, &ptr, sizeof(ptr));
-            CHECK_CUDA_ERROR(err);
-
-            buffer.reset(ptr);
-        }
-
-    }
-}
+int ff = 1;
+static std::vector<uint8_t> global_buffer;
 
 extern "C" {
     void filter_impl(uint8_t* src_buffer, int width, int height, int src_stride, int pixel_stride)
     {
-        load_logo();
-
-        assert(sizeof(rgb) == pixel_stride);
-        std::byte* dBuffer;
-        size_t pitch;
-
-        cudaError_t err;
         
-        err = cudaMallocPitch(&dBuffer, &pitch, width * sizeof(rgb), height);
-        CHECK_CUDA_ERROR(err);
+        size_t buffer_size = height * src_stride;
 
-        err = cudaMemcpy2D(dBuffer, pitch, src_buffer, src_stride, width * sizeof(rgb), height, cudaMemcpyDefault);
-        CHECK_CUDA_ERROR(err);
-
-        dim3 blockSize(16,16);
-        dim3 gridSize((width + (blockSize.x - 1)) / blockSize.x, (height + (blockSize.y - 1)) / blockSize.y);
-
-        remove_red_channel_inp<<<gridSize, blockSize>>>(dBuffer, width, height, pitch);
-
-        err = cudaMemcpy2D(src_buffer, src_stride, dBuffer, pitch, width * sizeof(rgb), height, cudaMemcpyDefault);
-        CHECK_CUDA_ERROR(err);
-
-        cudaFree(dBuffer);
-
-        err = cudaDeviceSynchronize();
-        CHECK_CUDA_ERROR(err);
-
-
+        if (global_buffer.empty())
         {
-            using namespace std::chrono_literals;
-            //std::this_thread::sleep_for(100ms);
+            global_buffer.assign(src_buffer, src_buffer + buffer_size);
+            return;
         }
-    }   
+
+     
+        RGBImage h_rgbImage1(width, height);
+        RGBImage h_rgbImage2(width, height);
+
+        std::vector<RGB> prev_rgb_image_vect = uint8_to_rgb(global_buffer.data(), width, height);
+        std::vector<RGB> new_rgb_image_vect = uint8_to_rgb(src_buffer, width, height);
+
+        h_rgbImage1.buffer = std::move(prev_rgb_image_vect);
+        h_rgbImage2.buffer = std::move(new_rgb_image_vect);
+
+
+        RGB *d_rgbImage1, *d_rgbImage2;
+        Lab *d_labImage1, *d_labImage2;
+
+
+        cudaMalloc(&d_rgbImage1, width * height * sizeof(RGB));
+        cudaMalloc(&d_rgbImage2, width * height * sizeof(RGB));
+        cudaMalloc(&d_labImage1, width * height * sizeof(Lab));
+        cudaMalloc(&d_labImage2, width * height * sizeof(Lab));
+
+
+
+        cudaMemcpy(d_rgbImage1, h_rgbImage1.buffer.data(), width * height * sizeof(RGB), cudaMemcpyHostToDevice);
+        cudaMemcpy(d_rgbImage2, h_rgbImage2.buffer.data(), width * height * sizeof(RGB), cudaMemcpyHostToDevice);
+
+        int blockSize = 256;
+        int numBlocks = (width * height + blockSize - 1) / blockSize;
+
+        RGBtoLabKernel<<<numBlocks, blockSize>>>(d_rgbImage1, d_labImage1, width * height);
+        RGBtoLabKernel<<<numBlocks, blockSize>>>(d_rgbImage2, d_labImage2, width * height);
+
+        cudaDeviceSynchronize();
+
+        Mask distance_lab(width, height);
+        computeDeltaE(d_labImage1, d_labImage2, distance_lab, width, height);
+
+
+        double *d_distance_lab, *d_opened_lab;
+        cudaMalloc(&d_distance_lab, width * height * sizeof(double));
+        cudaMalloc(&d_opened_lab, width * height * sizeof(double));
+
+        
+        cudaMemcpy(d_distance_lab, distance_lab.buffer.data(), width * height * sizeof(double), cudaMemcpyHostToDevice);
+        cudaDeviceSynchronize();
+
+        int morph_radius = 3;  
+        morphological_opening_cuda(d_distance_lab, d_opened_lab, width, height, morph_radius);
+        cudaDeviceSynchronize();
+
+
+        cudaMemcpy(distance_lab.buffer.data(), d_opened_lab, width * height * sizeof(double), cudaMemcpyDeviceToHost);
+        cudaDeviceSynchronize();
+
+
+
+        Mask opened_mask = apply_hysteresis_threshold_cuda(distance_lab, 4, 30);
+        cudaDeviceSynchronize();
+
+        RGBImage h_output_rgb = apply_mask_to_rgb(opened_mask, h_rgbImage2);
+        cudaDeviceSynchronize();
+
+
+        uint8_t *buf = rgb_to_uint8(h_output_rgb.buffer);
+
+
+        for (size_t k = 0; k < height *src_stride;k++)
+        {
+            src_buffer[k] = buf[k];
+           
+            
+        }
+
+        cudaFree(d_rgbImage1);
+        cudaFree(d_rgbImage2);
+        cudaFree(d_labImage1);
+        cudaFree(d_labImage2);
+        cudaFree(d_distance_lab);
+        cudaFree(d_opened_lab);
+
+    }
 }
+
+
+
+
+
+
