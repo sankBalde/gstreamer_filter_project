@@ -47,11 +47,14 @@ std::vector<RGB> convertToVector(RGB* array, size_t size) {
 
 int ff = 1;
 static std::vector<uint8_t> global_buffer;
+static std::vector<RGBImage> background_images;
+static int bg_number_frame = 10;
+static int cpt_frame = 0;
 
 extern "C" {
     void filter_impl(uint8_t* src_buffer, int width, int height, int src_stride, int pixel_stride)
     {
-        
+        cpt_frame++;
         size_t buffer_size = height * src_stride;
 
         if (global_buffer.empty())
@@ -69,6 +72,17 @@ extern "C" {
 
         h_rgbImage1.buffer = std::move(prev_rgb_image_vect);
         h_rgbImage2.buffer = std::move(new_rgb_image_vect);
+
+        background_images.push_back(h_rgbImage2);
+        if (cpt_frame == bg_number_frame-1)
+        {
+            cpt_frame = 0;
+            background_images.push_back(h_rgbImage1);
+            RGBImage average = averageRGBImages(background_images);
+            background_images.clear();
+            uint8_t* average_buffer_ptr = rgb_to_uint8(average.buffer);
+            global_buffer.assign(average_buffer_ptr, average_buffer_ptr + buffer_size);
+        }
 
 
         RGB *d_rgbImage1, *d_rgbImage2;

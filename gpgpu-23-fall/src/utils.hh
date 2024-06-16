@@ -433,3 +433,42 @@ LabImage convertrgb2lab(RGBImage& rgb_image) {
 
     return lab_image;
 }
+
+
+RGBImage averageRGBImages(const std::vector<RGBImage>& images) {
+    if (images.empty()) {
+        return RGBImage(); 
+    }
+    
+    int width = images[0].width;
+    int height = images[0].height;
+
+    for (const auto& img : images) {
+        if (img.width != width || img.height != height) {
+            std::cerr << "Les images doivent avoir les mêmes dimensions." << std::endl;
+            return RGBImage();
+        }
+    }
+
+    std::vector<int> sumR(width * height, 0), sumG(width * height, 0), sumB(width * height, 0);
+    int numImages = images.size();
+
+    for (const auto& img : images) {
+        for (int i = 0; i < width * height; ++i) {
+            sumR[i] += img.buffer[i].R;
+            sumG[i] += img.buffer[i].G;
+            sumB[i] += img.buffer[i].B;
+        }
+    }
+
+    RGBImage result(width, height);
+    for (int i = 0; i < width * height; ++i) {
+        result.buffer[i].R = sumR[i] / numImages;
+        result.buffer[i].G = sumG[i] / numImages;
+        result.buffer[i].B = sumB[i] / numImages;
+    }
+
+    return result;
+}
+
+

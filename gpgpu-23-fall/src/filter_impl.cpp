@@ -10,10 +10,17 @@
 #include "utils.hh"
 
 static std::vector<uint8_t> global_buffer;
+static std::vector<RGBImage> background_images;
+static int bg_number_frame = 10;
+static int cpt_frame = 0;
+
+
+
 
 extern "C" {
     void filter_impl(uint8_t* buffer, int width, int height, int stride, int pixel_stride)
     {
+        cpt_frame++;
         size_t buffer_size = height * stride;
 
         if (global_buffer.empty())
@@ -22,13 +29,27 @@ extern "C" {
             return;
         }
 
+        
         std::vector<RGB> prev_rgb_image_vect = uint8_to_rgb(global_buffer.data(), width, height);
         std::vector<RGB> new_rgb_image_vect = uint8_to_rgb(buffer, width, height);
+
 
         RGBImage rgbImage1(width, height);
         RGBImage rgbImage2(width, height);
         rgbImage1.buffer = std::move(prev_rgb_image_vect);
         rgbImage2.buffer = std::move(new_rgb_image_vect);
+
+        background_images.push_back(rgbImage2);
+        if (cpt_frame == bg_number_frame-1)
+        {
+            cpt_frame = 0;
+            background_images.push_back(rgbImage1);
+            RGBImage average = averageRGBImages(background_images);
+            background_images.clear();
+            uint8_t* average_buffer_ptr = rgb_to_uint8(average.buffer);
+            global_buffer.assign(average_buffer_ptr, average_buffer_ptr + buffer_size);
+        }
+            
 
         LabImage lab_image1 = convertrgb2lab(rgbImage1);
         LabImage lab_image2 = convertrgb2lab(rgbImage2);
