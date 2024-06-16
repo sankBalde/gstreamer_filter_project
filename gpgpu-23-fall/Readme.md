@@ -14,15 +14,16 @@
 ```sh
 nix-shell                                            # 1
 cmake -S . -B build --preset release -D USE_CUDA=ON  # 2 (ou debug)
-cmake --build build                                  # 2
+cmake --build build                                  # 3
 
 
-wget https://gstreamer.freedesktop.org/media/sintel_trailer-480p.webm # 3
-export GST_PLUGIN_PATH=$(pwd)                                         # 4
-ln -s ./build/libgstcudafilter-cpp.so libgstcudafilter.so             # 5
+wget https://gstreamer.freedesktop.org/media/sintel_trailer-480p.webm # 4
+export GST_PLUGIN_PATH=$(pwd)                                         # 5
+ln -s ./build/libgstcudafilter-cpp.so libgstcudafilter.so             # 6
 
+export OPENING_SIZE_ENV=3 TH_LOW_ENV=4 TH_HIGH_ENV=30 BG_NUMBER_FRAME_ENV=10 
 
-gst-launch-1.0 uridecodebin uri=file://$(pwd)/sintel_trailer-480p.webm ! videoconvert ! "video/x-raw, format=(string)RGB" ! cudafilter ! videoconvert ! video/x-raw, format=I420 ! x264enc ! mp4mux ! filesink location=video.mp4 #5
+gst-launch-1.0 uridecodebin uri=file://$(pwd)/sintel_trailer-480p.webm ! videoconvert ! "video/x-raw, format=(string)RGB" ! cudafilter ! videoconvert ! video/x-raw, format=I420 ! x264enc ! mp4mux ! filesink location=video.mp4 #7
 ```
 
 ## Code

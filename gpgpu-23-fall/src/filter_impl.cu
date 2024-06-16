@@ -48,8 +48,13 @@ std::vector<RGB> convertToVector(RGB* array, size_t size) {
 int ff = 1;
 static std::vector<uint8_t> global_buffer;
 static std::vector<RGBImage> background_images;
-static int bg_number_frame = 10;
 static int cpt_frame = 0;
+
+static int opening_size;
+static int th_low;
+static int th_high;
+static int bg_number_frame;
+
 
 extern "C" {
     void filter_impl(uint8_t* src_buffer, int width, int height, int src_stride, int pixel_stride)
@@ -60,6 +65,14 @@ extern "C" {
         if (global_buffer.empty())
         {
             global_buffer.assign(src_buffer, src_buffer + buffer_size);
+            std::string opening_size_var = "OPENING_SIZE_ENV";
+            std::string th_low_var = "TH_LOW_ENV";
+            std::string th_high_var = "TH_HIGH_ENV";
+            std::string bg_number_frame_var = "BG_NUMBER_FRAME_ENV";
+            opening_size = getEnvAsInt(opening_size_var).value_or(3);
+            th_low = getEnvAsInt(th_low_var).value_or(4);
+            th_high = getEnvAsInt(th_high_var).value_or(30);
+            bg_number_frame = getEnvAsInt(bg_number_frame_var).value_or(10);
             return;
         }
 
@@ -119,8 +132,8 @@ extern "C" {
         cudaMemcpy(d_distance_lab, distance_lab.buffer.data(), width * height * sizeof(double), cudaMemcpyHostToDevice);
         cudaDeviceSynchronize();
 
-        int morph_radius = 3;  
-        morphological_opening_cuda(d_distance_lab, d_opened_lab, width, height, morph_radius);
+     
+        morphological_opening_cuda(d_distance_lab, d_opened_lab, width, height, opening_size);
         cudaDeviceSynchronize();
 
 
@@ -129,7 +142,7 @@ extern "C" {
 
 
 
-        Mask opened_mask = apply_hysteresis_threshold_cuda(distance_lab, 4, 30);
+        Mask opened_mask = apply_hysteresis_threshold_cuda(distance_lab, th_low, th_high);
         cudaDeviceSynchronize();
 
         RGBImage h_output_rgb = apply_mask_to_rgb(opened_mask, h_rgbImage2);

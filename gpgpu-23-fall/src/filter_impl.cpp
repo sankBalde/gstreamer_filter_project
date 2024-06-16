@@ -11,21 +11,36 @@
 
 static std::vector<uint8_t> global_buffer;
 static std::vector<RGBImage> background_images;
-static int bg_number_frame = 10;
 static int cpt_frame = 0;
 
-
+static int opening_size;
+static int th_low;
+static int th_high;
+static int bg_number_frame;
 
 
 extern "C" {
     void filter_impl(uint8_t* buffer, int width, int height, int stride, int pixel_stride)
     {
+
+
+
+      
+        
         cpt_frame++;
         size_t buffer_size = height * stride;
 
         if (global_buffer.empty())
         {
             global_buffer.assign(buffer, buffer + buffer_size);
+            std::string opening_size_var = "OPENING_SIZE_ENV";
+            std::string th_low_var = "TH_LOW_ENV";
+            std::string th_high_var = "TH_HIGH_ENV";
+            std::string bg_number_frame_var = "BG_NUMBER_FRAME_ENV";
+            opening_size = getEnvAsInt(opening_size_var).value_or(3);
+            th_low = getEnvAsInt(th_low_var).value_or(4);
+            th_high = getEnvAsInt(th_high_var).value_or(30);
+            bg_number_frame = getEnvAsInt(bg_number_frame_var).value_or(10);
             return;
         }
 
@@ -55,8 +70,8 @@ extern "C" {
         LabImage lab_image2 = convertrgb2lab(rgbImage2);
 
         Mask distance_lab = deltaE_cie76(lab_image1, lab_image2);
-        Mask opening_mask = morphological_opening(distance_lab, 3);
-        Mask hysteris = apply_hysteresis_threshold(opening_mask, 4, 30);
+        Mask opening_mask = morphological_opening(distance_lab, opening_size);
+        Mask hysteris = apply_hysteresis_threshold(opening_mask, th_low, th_high);
 
         RGBImage final = mask_to_rgb(hysteris, rgbImage2);
 

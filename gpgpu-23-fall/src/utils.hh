@@ -6,20 +6,11 @@
 #include <cstdint>
 #include <stdexcept>
 #include <omp.h>
+#include <iostream>
+#include <cstdlib> 
+#include <string>  
+#include <optional> 
 
-
-/*std::vector<RGB> uint8_to_rgb(const uint8_t* buffer, int w, int h) {
-    size_t num_pixels = w * h;
-    std::vector<RGB> rgb_data(num_pixels);
-    //#pragma omp parallel for
-    for (size_t i = 0; i < num_pixels; ++i) {
-        rgb_data[i].R = buffer[i * 3];
-        rgb_data[i].G = buffer[i * 3 + 1];
-        rgb_data[i].B = buffer[i * 3 + 2];
-    }
-
-    return rgb_data;
-}*/
 
 std::vector<RGB> uint8_to_rgb(const uint8_t* buffer, int w, int h) {
     size_t num_pixels = w * h;
@@ -174,23 +165,19 @@ Mask dilate(Mask& mask, int radius) {
 
     for (int y = 0; y < mask.height; ++y) {
         for (int x = 0; x < mask.width; ++x) {
-            // Initialiser les valeurs min/max avec la première valeur dans le voisinage
             double max_distance = mask.get_distance(x, y);
 
-            // Parcourir le voisinage défini par le rayon
             for (int j = -radius; j <= radius; ++j) {
                 for (int i = -radius; i <= radius; ++i) {
                     int neighbor_x = x + i;
                     int neighbor_y = y + j;
                     if (neighbor_x >= 0 && neighbor_x < mask.width && neighbor_y >= 0 && neighbor_y < mask.height) {
                         double neighbor_distance = mask.get_distance(neighbor_x, neighbor_y);
-                        // Mettre à jour la distance maximale du voisinage
                         max_distance = std::max(max_distance, neighbor_distance);
                     }
                 }
             }
 
-            // Affecter la valeur max à la distance du pixel dilaté
             dilated_mask.set_distance(x, y, max_distance);
         }
     }
@@ -200,26 +187,21 @@ Mask dilate(Mask& mask, int radius) {
 
 Mask erode(Mask& mask, int radius) {
     Mask eroded_mask(mask.width, mask.height);
-    //#pragma omp parallel for
     for (int y = 0; y < mask.height; ++y) {
         for (int x = 0; x < mask.width; ++x) {
-            // Initialiser les valeurs min/max avec la première valeur dans le voisinage
             double min_distance = mask.get_distance(x, y);
 
-            // Parcourir le voisinage défini par le rayon
             for (int j = -radius; j <= radius; ++j) {
                 for (int i = -radius; i <= radius; ++i) {
                     int neighbor_x = x + i;
                     int neighbor_y = y + j;
                     if (neighbor_x >= 0 && neighbor_x < mask.width && neighbor_y >= 0 && neighbor_y < mask.height) {
                         double neighbor_distance = mask.get_distance(neighbor_x, neighbor_y);
-                        // Mettre à jour la distance minimale du voisinage
                         min_distance = std::min(min_distance, neighbor_distance);
                     }
                 }
             }
 
-            // Affecter la valeur min à la distance du pixel érodé
             eroded_mask.set_distance(x, y, min_distance);
         }
     }
@@ -233,63 +215,22 @@ Mask morphological_opening(Mask& mask, int radius) {
     return opened_mask;
 }
 
-void explore_connected_pixels(Mask& mask, Mask& result_mask, int x, int y, double low_threshold, double high_threshold) {
-    // Marquer le pixel actuel comme moyen
-    result_mask.set_distance(x, y, 255.0);
 
-    // Définir les offsets pour les voisins
-    int dx[] = {-1, 0, 1, -1, 1, -1, 0, 1};
-    int dy[] = {-1, -1, -1, 0, 0, 1, 1, 1};
-
-    // Parcourir les voisins du pixel actuel
-    for (int i = 0; i < 8; ++i) {
-        int nx = x + dx[i];
-        int ny = y + dy[i];
-
-        // Vérifier si le voisin est dans les limites de l'image
-        if (nx >= 0 && ny >= 0 && nx < mask.get_width() && ny < mask.get_height()) {
-            // Vérifier si le voisin n'a pas déjà été traité
-            if (result_mask.get_distance(nx, ny) == 0.0) {
-                int neighbor_distance = mask.get_distance(nx, ny);
-
-                // Si le voisin est au-dessus du seuil haut, le marquer comme fort et explorer ses voisins
-                if (neighbor_distance > high_threshold) {
-                    result_mask.set_distance(nx, ny, 255.0);
-                    explore_connected_pixels(mask, result_mask, nx, ny, low_threshold, high_threshold);
-                }
-                // Si le voisin est entre les seuils, le marquer comme moyen et explorer ses voisins
-                else if (neighbor_distance > low_threshold) {
-                    result_mask.set_distance(nx, ny, 255.0);
-                    explore_connected_pixels(mask, result_mask, nx, ny, low_threshold, high_threshold);
-                }
-                // Sinon, le marquer comme faible
-                else {
-                    result_mask.set_distance(nx, ny, 0.0);
-                }
-            }
-        }
-    }
-}
 
 
 Mask apply_hysteresis_threshold(Mask& mask, int low_threshold, int high_threshold) {
     Mask result_mask(mask.width, mask.height);
 
-    // Parcourir tous les pixels du masque
     for (int y = 0; y < mask.height; ++y) {
         for (int x = 0; x < mask.width; ++x) {
             double pixel_distance = mask.get_distance(x, y);
             double result_distance = 0.0;
 
-            // Appliquer le seuillage
             if (pixel_distance < low_threshold) {
-                // Si la distance du pixel est en dessous du seuil bas, le marquer comme faible
                 result_distance = 0.0;
             } else if (pixel_distance > high_threshold) {
-                // Si la distance du pixel est au-dessus du seuil haut, le marquer comme fort
                 result_distance = 255.0;
             } else {
-                // Si la distance du pixel est entre les seuils, le marquer comme moyen
                 result_distance = 129.0;
             }
             result_mask.set_distance(x, y, result_distance);
@@ -301,61 +242,17 @@ Mask apply_hysteresis_threshold(Mask& mask, int low_threshold, int high_threshol
 
 
 
-/*
-Mask apply_hysteresis_threshold(Mask& mask, double low_threshold, double high_threshold) {
-    Mask result_mask(mask.get_width(), mask.get_height());
-
-    // Initialiser le masque résultant avec des distances faibles (0.0)
-    for (int y = 0; y < mask.get_height(); ++y) {
-        for (int x = 0; x < mask.get_width(); ++x) {
-            result_mask.set_distance(x, y, 0.0);
-        }
-    }
-
-    // Parcourir tous les pixels du masque
-    for (int y = 0; y < mask.get_height(); ++y) {
-        for (int x = 0; x < mask.get_width(); ++x) {
-            // Vérifier si le pixel a déjà été attribué un niveau de confiance
-            if (result_mask.get_distance(x, y) != 0.0) {
-                continue; // Passer au pixel suivant si déjà traité
-            }
-
-            int pixel_distance = mask.get_distance(x, y);
-
-            // Si la distance du pixel est en dessous du seuil bas, le marquer comme faible
-            if (pixel_distance <= low_threshold) {
-                result_mask.set_distance(x, y, 0.0);
-            }
-            // Si la distance du pixel est au-dessus du seuil haut, le marquer comme fort
-            else if (pixel_distance > high_threshold) {
-                result_mask.set_distance(x, y, 255.0);
-            }
-            // Si la distance du pixel est entre les seuils, explorer les pixels connectés
-            else {
-                explore_connected_pixels(mask, result_mask, x, y, low_threshold, high_threshold);
-            }
-        }
-    }
-
-    return result_mask;
-}
-*/
-
 RGBImage mask_to_rgb(Mask& mask, RGBImage& image) {
     RGBImage rgb_image(mask.get_width(), mask.get_height());
 
-    // Parcourir tous les pixels du masque
     for (int y = 0; y < mask.get_height(); ++y) {
         for (int x = 0; x < mask.get_width(); ++x) {
             double value = mask.get_distance(x, y);
 
-            // Calculer la nouvelle valeur de la composante rouge en fonction du masque
             double new_red = image.buffer[y * image.width + x].R + 0.5 * value;
 
-            // Limiter la valeur de la composante rouge à 255
             new_red = std::min(new_red, 255.0);
 
-            // Assigner la nouvelle valeur de la composante rouge
             rgb_image.buffer[y * rgb_image.width + x] = {static_cast<u_int8_t>(new_red), image.buffer[y * image.width + x].G, image.buffer[y * image.width + x].B};
         }
     }
@@ -365,7 +262,6 @@ RGBImage mask_to_rgb(Mask& mask, RGBImage& image) {
 RGBImage mask_to_rgb(Mask& mask) {
     RGBImage rgb_image(mask.width, mask.height);
 
-    // Remplir l'image RGB avec des pixels noirs (0, 0, 0)
     for (int y = 0; y < mask.height; ++y) {
         for (int x = 0; x < mask.width; ++x) {
             double value = mask.buffer[y * rgb_image.width + x];
@@ -408,11 +304,10 @@ Mask deltaE_cie76(LabImage& image1, LabImage& image2) {
 
 RGBImage convertlab2rgb(LabImage& lab_image) {
     RGBImage rgb_image(lab_image.width, lab_image.height);
-    //#pragma omp parallel for
     for (int y = 0; y < lab_image.height; ++y) {
         for (int x = 0; x < lab_image.width; ++x) {
             const Lab& lab = lab_image.get_pixel(x, y);
-            const RGB& rgb = LabtoRGB(lab); // buffer[y * width + x];
+            const RGB& rgb = LabtoRGB(lab); 
             rgb_image.buffer[y * lab_image.width + x] = rgb;
         }
     }
@@ -469,6 +364,24 @@ RGBImage averageRGBImages(const std::vector<RGBImage>& images) {
     }
 
     return result;
+}
+
+
+
+std::optional<int> getEnvAsInt(const std::string& env_var) {
+    char* value = getenv(env_var.c_str());
+    if (value != nullptr) {
+        try {
+            return std::stoi(value);
+        } catch (const std::invalid_argument& e) {
+            std::cerr << "La valeur de '" << env_var << "' n'est pas un entier valide." << std::endl;
+        } catch (const std::out_of_range& e) {
+            std::cerr << "La valeur de '" << env_var << "' est hors limite pour un int." << std::endl;
+        }
+    } else {
+        std::cerr << "La variable d'environnement '" << env_var << "' n'existe pas." << std::endl;
+    }
+    return {}; 
 }
 
 
