@@ -21,9 +21,9 @@ wget https://gstreamer.freedesktop.org/media/sintel_trailer-480p.webm # 4
 export GST_PLUGIN_PATH=$(pwd)                                         # 5
 ln -s ./build/libgstcudafilter-cpp.so libgstcudafilter.so             # 6
 
-export OPENING_SIZE_ENV=3 TH_LOW_ENV=4 TH_HIGH_ENV=30 BG_NUMBER_FRAME_ENV=10 
+export OPENING_SIZE_ENV=3 TH_LOW_ENV=4 TH_HIGH_ENV=30 BG_NUMBER_FRAME_ENV=10 #7
 
-gst-launch-1.0 uridecodebin uri=file://$(pwd)/sintel_trailer-480p.webm ! videoconvert ! "video/x-raw, format=(string)RGB" ! cudafilter ! videoconvert ! video/x-raw, format=I420 ! x264enc ! mp4mux ! filesink location=video.mp4 #7
+gst-launch-1.0 uridecodebin uri=file://$(pwd)/sintel_trailer-480p.webm ! videoconvert ! "video/x-raw, format=(string)RGB" ! cudafilter ! videoconvert ! video/x-raw, format=I420 ! x264enc ! mp4mux ! filesink location=video.mp4 #8
 ```
 
 ## Code
